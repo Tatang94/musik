@@ -1,6 +1,7 @@
 class MusicReward {
     constructor() {
-        this.currentPlayer = null;
+        this.player = null; // YouTube player instance
+        this.currentVideoId = null;
         this.currentSongId = null;
         this.startTime = null;
         this.pausedTime = 0; // Total time spent paused
@@ -86,8 +87,7 @@ class MusicReward {
                 // Create YouTube player
                 this.createYouTubePlayer(youtubeId);
                 
-                // Start tracking timer
-                this.startTrackingTimer();
+                // Tracking timer will be started by onPlayerReady
             } else {
                 throw new Error(result.message || 'Gagal memutar lagu');
             }
@@ -100,7 +100,7 @@ class MusicReward {
     }
     
     createYouTubePlayer(videoId) {
-        // Create iframe for YouTube player (hidden but functional)
+        // Create div for YouTube player (hidden but functional)
         const playerContainer = document.getElementById('youtube-player-container') || (() => {
             const container = document.createElement('div');
             container.id = 'youtube-player-container';
@@ -109,18 +109,42 @@ class MusicReward {
             return container;
         })();
         
-        playerContainer.innerHTML = `
-            <iframe id="youtube-player" 
-                    width="560" 
-                    height="315" 
-                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${window.location.origin}&controls=0" 
-                    frameborder="0" 
-                    allow="autoplay; encrypted-media" 
-                    allowfullscreen>
-            </iframe>
-        `;
+        // Clear previous player
+        playerContainer.innerHTML = '<div id="youtube-player"></div>';
         
-        this.playerIframe = document.getElementById('youtube-player');
+        // Create YouTube player using IFrame API
+        this.currentVideoId = videoId;
+        this.initYouTubePlayer(videoId);
+    }
+    
+    initYouTubePlayer(videoId) {
+        // Ensure YouTube API is loaded
+        if (typeof YT === 'undefined' || !YT.Player) {
+            console.log('YouTube API not ready, retrying...');
+            setTimeout(() => this.initYouTubePlayer(videoId), 500);
+            return;
+        }
+        
+        this.player = new YT.Player('youtube-player', {
+            height: '315',
+            width: '560',
+            videoId: videoId,
+            playerVars: {
+                autoplay: 1,
+                controls: 0,
+                disablekb: 1,
+                fs: 0,
+                iv_load_policy: 3,
+                modestbranding: 1,
+                playsinline: 1,
+                rel: 0
+            },
+            events: {
+                onReady: (event) => this.onPlayerReady(event),
+                onStateChange: (event) => this.onPlayerStateChange(event)
+            }
+        });
+        
         this.isPlaying = true;
         this.isPaused = false;
         this.isToggling = false;
@@ -132,17 +156,43 @@ class MusicReward {
             icon.classList.remove('fa-play');
             icon.classList.add('fa-pause');
         }
-        
-        // Simulate player ready state
-        setTimeout(() => {
-            this.onPlayerReady();
-        }, 2000);
     }
     
-    onPlayerReady() {
+    onPlayerStateChange(event) {
+        // Handle YouTube player state changes
+        if (event.data === YT.PlayerState.PLAYING) {
+            if (this.isPaused) {
+                // Player resumed externally, update our state
+                this.isPaused = false;
+                const playBtn = document.getElementById('play-pause-btn');
+                if (playBtn) {
+                    const icon = playBtn.querySelector('i');
+                    icon.classList.remove('fa-play');
+                    icon.classList.add('fa-pause');
+                }
+                this.resumeTracking();
+            }
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            if (!this.isPaused) {
+                // Player paused externally, update our state
+                this.isPaused = true;
+                const playBtn = document.getElementById('play-pause-btn');
+                if (playBtn) {
+                    const icon = playBtn.querySelector('i');
+                    icon.classList.remove('fa-pause');
+                    icon.classList.add('fa-play');
+                }
+                this.pauseTracking();
+            }
+        }
+    }
+    
+    onPlayerReady(event) {
         console.log('Player ready');
         // Start progress tracking
         this.startProgressTracking();
+        // Start tracking timer
+        this.startTrackingTimer();
     }
     
     startProgressTracking() {
@@ -267,6 +317,9 @@ class MusicReward {
         if (!this.isPaused) {
             // Currently playing - pause it
             console.log('Pausing playback');
+            if (this.player && this.player.pauseVideo) {
+                this.player.pauseVideo();
+            }
             icon.classList.remove('fa-pause');
             icon.classList.add('fa-play');
             this.isPaused = true;
@@ -274,6 +327,9 @@ class MusicReward {
         } else {
             // Currently paused - resume it
             console.log('Resuming playback');
+            if (this.player && this.player.playVideo) {
+                this.player.playVideo();
+            }
             icon.classList.remove('fa-play');
             icon.classList.add('fa-pause');
             this.isPaused = false;
@@ -315,7 +371,12 @@ class MusicReward {
         }
         
         this.hidePlayer();
-        this.currentPlayer = null;
+        
+        // Destroy YouTube player
+        if (this.player && this.player.destroy) {
+            this.player.destroy();
+        }
+        this.player = null;
         this.currentSongId = null;
     }
     
