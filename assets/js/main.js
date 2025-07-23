@@ -100,11 +100,19 @@ class MusicReward {
     }
     
     createYouTubePlayer(videoId) {
-        // Create div for YouTube player (hidden but functional)
+        // Create div for YouTube player (visible for ads to show)
         const playerContainer = document.getElementById('youtube-player-container') || (() => {
             const container = document.createElement('div');
             container.id = 'youtube-player-container';
-            container.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 560px; height: 315px;';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; width: 300px; height: 169px; z-index: 1000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); background: #000;';
+            
+            // Add minimize button
+            const minimizeBtn = document.createElement('button');
+            minimizeBtn.innerHTML = '−';
+            minimizeBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; z-index: 1001; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 3px; width: 25px; height: 25px; cursor: pointer; font-size: 16px; line-height: 1;';
+            minimizeBtn.onclick = () => this.togglePlayerVisibility();
+            container.appendChild(minimizeBtn);
+            
             document.body.appendChild(container);
             return container;
         })();
@@ -126,16 +134,13 @@ class MusicReward {
         }
         
         this.player = new YT.Player('youtube-player', {
-            height: '315',
-            width: '560',
+            height: '169',
+            width: '300',
             videoId: videoId,
             playerVars: {
                 autoplay: 1,
-                controls: 0,
-                disablekb: 1,
-                fs: 0,
-                iv_load_policy: 3,
-                modestbranding: 1,
+                controls: 1,
+                fs: 1,
                 playsinline: 1,
                 rel: 0
             },
@@ -435,6 +440,22 @@ class MusicReward {
             if (bannerContainer) {
                 bannerContainer.style.display = 'none';
             }
+        }
+    }
+    
+    togglePlayerVisibility() {
+        const container = document.getElementById('youtube-player-container');
+        const player = document.getElementById('youtube-player');
+        const btn = container.querySelector('button');
+        
+        if (player.style.display === 'none') {
+            player.style.display = 'block';
+            container.style.height = '169px';
+            btn.innerHTML = '−';
+        } else {
+            player.style.display = 'none';
+            container.style.height = '30px';
+            btn.innerHTML = '+';
         }
     }
     

@@ -132,3 +132,5 @@ The application follows a clean separation of concerns with a lightweight fronte
 - ✓ Added .htaccess for security and performance
 - ✓ **NEW**: Clean database starting from zero (no sample data)
 - ✓ **NEW**: Removed all temporary and sample files
+- ✓ **FIXED**: YouTube ads visibility issue - player now displayed properly
+- ✓ **IMPROVED**: YouTube player with minimize/maximize functionality
