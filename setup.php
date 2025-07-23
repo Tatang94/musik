@@ -62,19 +62,7 @@ try {
     ");
     echo "Withdrawals table created successfully<br>";
     
-    // Insert sample songs
-    $sampleSongs = [
-        ['dQw4w9WgXcQ', 'Never Gonna Give You Up', 'Rick Astley'],
-        ['9bZkp7q19f0', 'Gangnam Style', 'PSY'],
-        ['kJQP7kiw5Fk', 'Despacito', 'Luis Fonsi ft. Daddy Yankee'],
-        ['fJ9rUzIMcZQ', 'Bohemian Rhapsody', 'Queen']
-    ];
-    
-    $stmt = $pdo->prepare("INSERT INTO songs (youtube_id, title, artist) VALUES (?, ?, ?)");
-    foreach ($sampleSongs as $song) {
-        $stmt->execute($song);
-    }
-    echo "Sample songs inserted successfully<br>";
+    echo "Database tables created successfully - ready for admin to add songs<br>";
     
     echo "<br><strong>Setup completed! You can now use the application.</strong>";
     echo "<br><a href='index.php'>Go to Main Page</a>";
