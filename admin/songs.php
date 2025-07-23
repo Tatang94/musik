@@ -446,8 +446,15 @@ $songs = $stmt->fetchAll();
 
         function updateSelectedCount() {
             const selectedCount = document.querySelectorAll('.song-checkbox:checked').length;
-            document.getElementById('selected-count').textContent = selectedCount;
-            document.getElementById('add-selected-btn').disabled = selectedCount === 0;
+            const countElement = document.getElementById('selected-count');
+            const btnElement = document.getElementById('add-selected-btn');
+            
+            if (countElement) {
+                countElement.textContent = selectedCount;
+            }
+            if (btnElement) {
+                btnElement.disabled = selectedCount === 0;
+            }
         }
 
         async function addSelectedSongs() {
@@ -468,6 +475,8 @@ $songs = $stmt->fetchAll();
             }
 
             const addBtn = document.getElementById('add-selected-btn');
+            if (!addBtn) return;
+            
             const originalText = addBtn.innerHTML;
             addBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
             addBtn.disabled = true;
@@ -494,8 +503,10 @@ $songs = $stmt->fetchAll();
             } catch (error) {
                 showToast('Error: ' + error.message, 'danger');
             } finally {
-                addBtn.innerHTML = originalText;
-                addBtn.disabled = false;
+                if (addBtn) {
+                    addBtn.innerHTML = originalText;
+                    addBtn.disabled = false;
+                }
             }
         }
 
