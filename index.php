@@ -125,7 +125,7 @@ $songs = $stmt->fetchAll();
                 <i class="fas fa-home"></i>
                 <span>Beranda</span>
             </div>
-            <div class="nav-item">
+            <div class="nav-item" onclick="goToMusic()">
                 <i class="fas fa-music"></i>
                 <span>Musik</span>
             </div>

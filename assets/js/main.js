@@ -427,6 +427,11 @@ async function submitWithdraw() {
     }
 }
 
+// Navigation functions
+function goToMusic() {
+    window.location.href = '/songs.php';
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     window.musicReward = new MusicReward();
