@@ -26,7 +26,20 @@ $songs = $stmt->fetchAll();
         <div class="header">
             <div class="d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-play-circle text-primary me-2" style="font-size: 2rem;"></i>
+                    <div class="modern-logo me-3">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="20" cy="20" r="18" fill="url(#logoGradient)" stroke="white" stroke-width="2"/>
+                            <path d="M15 14L28 20L15 26V14Z" fill="white"/>
+                            <circle cx="20" cy="20" r="3" fill="white" opacity="0.8"/>
+                            <defs>
+                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#FFD700"/>
+                                    <stop offset="50%" style="stop-color:#FFA500"/>
+                                    <stop offset="100%" style="stop-color:#FF6B35"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
                     <h4 class="mb-0 fw-bold">MusikReward</h4>
                 </div>
                 <div class="balance-display">
@@ -40,6 +53,11 @@ $songs = $stmt->fetchAll();
         <div class="page-indicator mb-4">
             <h2 class="fw-bold mb-0">Daftar Lagu</h2>
             <p class="text-muted">Dengarkan lagu dan dapatkan Rp 0.5 per menit</p>
+            
+            <!-- Adsterra Banner Ad -->
+            <div class="ad-banner mt-3 mb-4" id="adsterra-banner">
+                <!-- Adsterra banner will be inserted here dynamically -->
+            </div>
         </div>
 
         <!-- Songs List -->

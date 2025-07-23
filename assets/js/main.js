@@ -10,6 +10,7 @@ class MusicReward {
         
         this.initializeEventListeners();
         this.loadUserBalance();
+        this.loadBannerAd();
     }
     
     initializeEventListeners() {
@@ -321,6 +322,33 @@ class MusicReward {
     
     formatNumber(num) {
         return new Intl.NumberFormat('id-ID').format(num);
+    }
+    
+    async loadBannerAd() {
+        try {
+            const response = await fetch('api/get_banner.php');
+            const result = await response.json();
+            
+            if (result.success && result.script_code) {
+                const bannerContainer = document.getElementById('adsterra-banner');
+                if (bannerContainer) {
+                    bannerContainer.innerHTML = result.script_code;
+                    bannerContainer.style.display = 'block';
+                }
+            } else {
+                // Hide banner container if no active banner
+                const bannerContainer = document.getElementById('adsterra-banner');
+                if (bannerContainer) {
+                    bannerContainer.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading banner ad:', error);
+            const bannerContainer = document.getElementById('adsterra-banner');
+            if (bannerContainer) {
+                bannerContainer.style.display = 'none';
+            }
+        }
     }
     
     showError(message) {

@@ -103,6 +103,26 @@ $totalMinutes = $stmt->fetch()['total_minutes'] ?: 0;
             </div>
         </div>
 
+        <!-- Additional Management Cards -->
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="admin-card text-center">
+                    <i class="fas fa-ad text-info mb-3" style="font-size: 3rem;"></i>
+                    <h5>Banner Ads</h5>
+                    <p class="text-muted">Kelola iklan banner Adsterra</p>
+                    <a href="banner_ads.php" class="btn btn-info">Kelola Banner</a>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="admin-card text-center">
+                    <i class="fas fa-cog text-secondary mb-3" style="font-size: 3rem;"></i>
+                    <h5>Settings</h5>
+                    <p class="text-muted">Pengaturan aplikasi umum</p>
+                    <a href="#" class="btn btn-secondary">Settings</a>
+                </div>
+            </div>
+        </div>
+
         <!-- Recent Activity -->
         <div class="admin-card">
             <h5 class="mb-4">Recent Listening Sessions</h5>
