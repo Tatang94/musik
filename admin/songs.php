@@ -185,6 +185,41 @@ if ($_POST) {
                     $messageType = 'danger';
                 }
                 break;
+                
+            case 'delete_songs_bulk':
+                try {
+                    $selectedSongs = json_decode($_POST['selected_songs'], true);
+                    if (!$selectedSongs || !is_array($selectedSongs)) {
+                        throw new Exception('No songs selected for deletion');
+                    }
+                    
+                    $deletedCount = 0;
+                    $errors = [];
+                    
+                    foreach ($selectedSongs as $songId) {
+                        try {
+                            $stmt = $pdo->prepare("DELETE FROM songs WHERE id = ?");
+                            $stmt->execute([$songId]);
+                            $deletedCount++;
+                        } catch (Exception $e) {
+                            $errors[] = "Failed to delete song ID $songId: " . $e->getMessage();
+                        }
+                    }
+                    
+                    $message = "Successfully deleted $deletedCount songs";
+                    if (!empty($errors)) {
+                        $message .= ". Errors: " . implode(', ', array_slice($errors, 0, 3));
+                        if (count($errors) > 3) {
+                            $message .= " and " . (count($errors) - 3) . " more";
+                        }
+                    }
+                    $messageType = 'success';
+                    
+                } catch (Exception $e) {
+                    $message = 'Error: ' . $e->getMessage();
+                    $messageType = 'danger';
+                }
+                break;
         }
     }
 }
@@ -292,11 +327,27 @@ $songs = $stmt->fetchAll();
 
         <!-- Songs List -->
         <div class="admin-card">
-            <h5 class="mb-4">Current Songs (<?= count($songs) ?>)</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">Current Songs (<?= count($songs) ?>)</h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllExistingSongs()">
+                        <i class="fas fa-check-square me-1"></i>Select All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="deselectAllExistingSongs()">
+                        <i class="fas fa-square me-1"></i>Deselect All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="deleteSelectedSongs()" id="delete-selected-btn" disabled>
+                        <i class="fas fa-trash me-1"></i>Delete Selected (<span id="selected-delete-count">0</span>)
+                    </button>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
+                            <th width="50px">
+                                <input type="checkbox" class="form-check-input" id="select-all-checkbox" onchange="toggleAllExistingSongs()">
+                            </th>
                             <th>Thumbnail</th>
                             <th>Song Details</th>
                             <th>Duration</th>
@@ -308,6 +359,11 @@ $songs = $stmt->fetchAll();
                     <tbody>
                         <?php foreach ($songs as $song): ?>
                         <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input song-delete-checkbox" 
+                                       data-song-id="<?= $song['id'] ?>" 
+                                       onchange="updateDeleteSelectedCount()">
+                            </td>
                             <td>
                                 <?php if ($song['thumbnail_url']): ?>
                                     <img src="<?= htmlspecialchars($song['thumbnail_url']) ?>" 
@@ -598,6 +654,93 @@ $songs = $stmt->fetchAll();
                 });
             }
         });
+
+        // Functions for bulk delete existing songs
+        function selectAllExistingSongs() {
+            document.querySelectorAll('.song-delete-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateDeleteSelectedCount();
+        }
+
+        function deselectAllExistingSongs() {
+            document.querySelectorAll('.song-delete-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateDeleteSelectedCount();
+        }
+
+        function toggleAllExistingSongs() {
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            if (!selectAllCheckbox) return;
+            
+            document.querySelectorAll('.song-delete-checkbox').forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateDeleteSelectedCount();
+        }
+
+        function updateDeleteSelectedCount() {
+            const selectedCount = document.querySelectorAll('.song-delete-checkbox:checked').length;
+            const countElement = document.getElementById('selected-delete-count');
+            const btnElement = document.getElementById('delete-selected-btn');
+            
+            if (countElement) {
+                countElement.textContent = selectedCount;
+            }
+            if (btnElement) {
+                btnElement.disabled = selectedCount === 0;
+            }
+        }
+
+        async function deleteSelectedSongs() {
+            const selectedCheckboxes = document.querySelectorAll('.song-delete-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('Pilih minimal satu lagu untuk dihapus');
+                return;
+            }
+
+            const selectedSongs = Array.from(selectedCheckboxes).map(checkbox => checkbox.dataset.songId);
+
+            if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedSongs.length} lagu dari playlist?`)) {
+                return;
+            }
+
+            const deleteBtn = document.getElementById('delete-selected-btn');
+            if (!deleteBtn) return;
+            
+            const originalText = deleteBtn.innerHTML;
+            deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+            deleteBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'delete_songs_bulk');
+                formData.append('selected_songs', JSON.stringify(selectedSongs));
+
+                const response = await fetch('', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showToast('Lagu-lagu berhasil dihapus dari playlist!', 'success');
+                    // Reset checkboxes
+                    deselectAllExistingSongs();
+                    // Reload page to see updated song list
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'danger');
+            } finally {
+                if (deleteBtn) {
+                    deleteBtn.innerHTML = originalText;
+                    deleteBtn.disabled = false;
+                }
+            }
+        }
     </script>
 </body>
 </html>
