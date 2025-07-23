@@ -1,6 +1,9 @@
 <?php
+// Get the correct path to database file
+$dbPath = __DIR__ . '/../musikreward.db';
+
 try {
-    $pdo = new PDO("sqlite:musikreward.db");
+    $pdo = new PDO("sqlite:" . $dbPath);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch(PDOException $e) {

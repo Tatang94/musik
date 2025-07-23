@@ -1,7 +1,9 @@
 <?php
 // Database setup script - run this first to create tables
+$dbPath = __DIR__ . '/musikreward.db';
+
 try {
-    $pdo = new PDO("sqlite:musikreward.db");
+    $pdo = new PDO("sqlite:" . $dbPath);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
