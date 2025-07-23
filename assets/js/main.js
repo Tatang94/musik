@@ -104,21 +104,46 @@ class MusicReward {
         const playerContainer = document.getElementById('youtube-player-container') || (() => {
             const container = document.createElement('div');
             container.id = 'youtube-player-container';
-            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; width: 300px; height: 169px; z-index: 1000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); background: #000;';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; width: 300px; height: 169px; z-index: 1000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3); background: #000; cursor: move;';
+            
+            // Add drag handle/title bar
+            const dragHandle = document.createElement('div');
+            dragHandle.style.cssText = 'position: absolute; top: 0; left: 0; right: 0; height: 30px; background: rgba(0,0,0,0.8); cursor: move; z-index: 1001; display: flex; align-items: center; justify-content: space-between; padding: 0 10px;';
+            dragHandle.innerHTML = '<span style="color: white; font-size: 12px;">YouTube Player</span>';
             
             // Add minimize button
             const minimizeBtn = document.createElement('button');
             minimizeBtn.innerHTML = '−';
-            minimizeBtn.style.cssText = 'position: absolute; top: 5px; right: 5px; z-index: 1001; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 3px; width: 25px; height: 25px; cursor: pointer; font-size: 16px; line-height: 1;';
-            minimizeBtn.onclick = () => this.togglePlayerVisibility();
-            container.appendChild(minimizeBtn);
+            minimizeBtn.style.cssText = 'background: rgba(255,255,255,0.2); color: white; border: none; border-radius: 3px; width: 20px; height: 20px; cursor: pointer; font-size: 14px; line-height: 1;';
+            minimizeBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.togglePlayerVisibility();
+            };
+            dragHandle.appendChild(minimizeBtn);
+            container.appendChild(dragHandle);
+            
+            // Make draggable
+            this.makeDraggable(container, dragHandle);
             
             document.body.appendChild(container);
             return container;
         })();
         
-        // Clear previous player
-        playerContainer.innerHTML = '<div id="youtube-player"></div>';
+        // Clear previous player, but keep the drag handle
+        const existingHandle = playerContainer.querySelector('div');
+        if (existingHandle) {
+            // Keep existing handle and just add new player div
+            const existingPlayer = document.getElementById('youtube-player');
+            if (existingPlayer) {
+                existingPlayer.remove();
+            }
+            const playerDiv = document.createElement('div');
+            playerDiv.id = 'youtube-player';
+            playerDiv.style.cssText = 'margin-top: 30px;';
+            playerContainer.appendChild(playerDiv);
+        } else {
+            playerContainer.innerHTML = '<div id="youtube-player" style="margin-top: 30px;"></div>';
+        }
         
         // Create YouTube player using IFrame API
         this.currentVideoId = videoId;
@@ -134,7 +159,7 @@ class MusicReward {
         }
         
         this.player = new YT.Player('youtube-player', {
-            height: '169',
+            height: '139',
             width: '300',
             videoId: videoId,
             playerVars: {
@@ -142,7 +167,8 @@ class MusicReward {
                 controls: 1,
                 fs: 1,
                 playsinline: 1,
-                rel: 0
+                rel: 0,
+                origin: window.location.origin
             },
             events: {
                 onReady: (event) => this.onPlayerReady(event),
@@ -456,6 +482,79 @@ class MusicReward {
             player.style.display = 'none';
             container.style.height = '30px';
             btn.innerHTML = '+';
+        }
+    }
+    
+    makeDraggable(element, handle) {
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+        
+        handle.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+        
+        // Touch events for mobile
+        handle.addEventListener('touchstart', dragStart);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', dragEnd);
+        
+        function dragStart(e) {
+            if (e.type === 'touchstart') {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
+            
+            if (e.target === handle || handle.contains(e.target)) {
+                isDragging = true;
+                element.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        }
+        
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                if (e.type === 'touchmove') {
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
+                
+                xOffset = currentX;
+                yOffset = currentY;
+                
+                // Keep within viewport bounds
+                const rect = element.getBoundingClientRect();
+                const maxX = window.innerWidth - rect.width;
+                const maxY = window.innerHeight - rect.height;
+                
+                currentX = Math.min(Math.max(0, currentX), maxX);
+                currentY = Math.min(Math.max(0, currentY), maxY);
+                
+                element.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                element.style.left = 'auto';
+                element.style.right = 'auto';
+                element.style.bottom = 'auto';
+                element.style.top = 'auto';
+            }
+        }
+        
+        function dragEnd(e) {
+            if (isDragging) {
+                isDragging = false;
+                element.style.cursor = 'move';
+            }
         }
     }
     
