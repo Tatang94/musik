@@ -11,37 +11,36 @@ if (!isset($input['song_id']) || !isset($input['minutes_listened']) || !isset($i
 }
 
 try {
-    $pdo->beginTransaction();
-    
     $user = getOrCreateUser($pdo, $userIp);
     
-    // Update user balance and total minutes
+    // Calculate new balance
     $newBalance = $user['balance'] + $input['reward_earned'];
-    $newTotalMinutes = $user['total_minutes'] + $input['minutes_listened'];
     
-    $stmt = $pdo->prepare("UPDATE users SET balance = ?, total_minutes = ? WHERE user_ip = ?");
-    $stmt->execute([$newBalance, $newTotalMinutes, $userIp]);
+    // Update user balance
+    $stmt = $pdo->prepare("UPDATE users SET balance = ? WHERE user_ip = ?");
+    $stmt->execute([$newBalance, $userIp]);
     
-    // Update listening session
+    // Update listening session with final stats (get the latest session for this user and song)
     $stmt = $pdo->prepare("
         UPDATE listening_sessions 
-        SET minutes_listened = ?, reward_earned = ? 
-        WHERE user_ip = ? AND song_id = ? 
-        ORDER BY created_at DESC 
-        LIMIT 1
+        SET minutes_listened = ?, reward_earned = ?, completed = 1
+        WHERE id = (
+            SELECT id FROM listening_sessions 
+            WHERE user_ip = ? AND song_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        )
     ");
     $stmt->execute([$input['minutes_listened'], $input['reward_earned'], $userIp, $input['song_id']]);
-    
-    $pdo->commit();
     
     echo json_encode([
         'success' => true,
         'new_balance' => $newBalance,
-        'total_minutes' => $newTotalMinutes
+        'reward_added' => $input['reward_earned'],
+        'minutes_listened' => $input['minutes_listened']
     ]);
     
 } catch (Exception $e) {
-    $pdo->rollBack();
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
 ?>

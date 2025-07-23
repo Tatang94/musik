@@ -79,11 +79,11 @@ class MusicReward {
     }
     
     createYouTubePlayer(videoId) {
-        // Create iframe for YouTube player (hidden)
+        // Create iframe for YouTube player (hidden but functional)
         const playerContainer = document.getElementById('youtube-player-container') || (() => {
             const container = document.createElement('div');
             container.id = 'youtube-player-container';
-            container.style.display = 'none';
+            container.style.cssText = 'position: fixed; top: -9999px; left: -9999px; width: 560px; height: 315px;';
             document.body.appendChild(container);
             return container;
         })();
@@ -92,17 +92,27 @@ class MusicReward {
             <iframe id="youtube-player" 
                     width="560" 
                     height="315" 
-                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${window.location.origin}" 
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${window.location.origin}&controls=0" 
                     frameborder="0" 
                     allow="autoplay; encrypted-media" 
                     allowfullscreen>
             </iframe>
         `;
         
+        this.playerIframe = document.getElementById('youtube-player');
+        this.isPlaying = true;
+        this.isPaused = false;
+        
+        // Update play button to pause state initially
+        const playBtn = document.getElementById('play-pause-btn');
+        const icon = playBtn.querySelector('i');
+        icon.classList.remove('fa-play');
+        icon.classList.add('fa-pause');
+        
         // Simulate player ready state
         setTimeout(() => {
             this.onPlayerReady();
-        }, 1000);
+        }, 2000);
     }
     
     onPlayerReady() {
@@ -132,20 +142,34 @@ class MusicReward {
     }
     
     startTrackingTimer() {
+        if (this.updateTimer) {
+            clearInterval(this.updateTimer);
+        }
+        
         this.updateTimer = setInterval(() => {
-            const currentTime = Date.now();
-            const elapsedMinutes = Math.floor((currentTime - this.startTime) / 60000);
+            if (this.isPaused) return; // Don't track when paused
             
+            const currentTime = Date.now();
+            const elapsedSeconds = Math.floor((currentTime - this.startTime) / 1000);
+            const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+            
+            // Update UI every second for smooth experience
+            const displayMinutes = Math.floor(elapsedSeconds / 60);
+            const displaySeconds = elapsedSeconds % 60;
+            document.getElementById('listening-time').textContent = `${displayMinutes}:${displaySeconds.toString().padStart(2, '0')}`;
+            
+            // Update reward and balance every minute
             if (elapsedMinutes > this.minutesListened) {
                 this.minutesListened = elapsedMinutes;
                 this.rewardEarned = this.minutesListened * 0.5;
                 
-                // Update UI
-                document.getElementById('listening-time').textContent = this.minutesListened + ' menit';
+                // Update reward display
                 document.getElementById('reward-earned').textContent = '+Rp ' + this.rewardEarned.toFixed(0);
                 
                 // Update balance in database
                 this.updateBalance();
+                
+                console.log(`Minutes listened: ${this.minutesListened}, Reward: Rp ${this.rewardEarned}`);
             }
         }, 1000);
     }
@@ -198,31 +222,56 @@ class MusicReward {
         const btn = document.getElementById('play-pause-btn');
         const icon = btn.querySelector('i');
         
-        if (icon.classList.contains('fa-pause')) {
+        if (this.isPlaying && !this.isPaused) {
             // Pause
             icon.classList.remove('fa-pause');
             icon.classList.add('fa-play');
+            this.isPaused = true;
             this.pauseTracking();
+            
+            // Control YouTube iframe by recreating with different URL
+            if (this.playerIframe) {
+                const currentSrc = this.playerIframe.src;
+                const videoId = currentSrc.match(/embed\/([^?]+)/)[1];
+                // Pause by replacing with static thumbnail
+                this.playerIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}&controls=0`;
+            }
         } else {
-            // Play
+            // Play/Resume
             icon.classList.remove('fa-play');
             icon.classList.add('fa-pause');
+            this.isPaused = false;
             this.resumeTracking();
+            
+            // Resume YouTube playback
+            if (this.playerIframe) {
+                const currentSrc = this.playerIframe.src;
+                const videoId = currentSrc.match(/embed\/([^?]+)/)[1];
+                this.playerIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${window.location.origin}&controls=0`;
+            }
         }
     }
     
     pauseTracking() {
         if (this.updateTimer) {
             clearInterval(this.updateTimer);
+            this.updateTimer = null;
         }
         if (this.progressTimer) {
             clearInterval(this.progressTimer);
+            this.progressTimer = null;
         }
+        console.log('Tracking paused');
     }
     
     resumeTracking() {
-        this.startTrackingTimer();
-        this.startProgressTracking();
+        if (!this.updateTimer) {
+            this.startTrackingTimer();
+        }
+        if (!this.progressTimer) {
+            this.startProgressTracking();
+        }
+        console.log('Tracking resumed');
     }
     
     stopCurrentSong() {
