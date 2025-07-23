@@ -156,12 +156,7 @@ $songs = $stmt->fetchAll();
             </div>
         </div>
 
-        <?php if ($message): ?>
-        <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
-            <?= htmlspecialchars($message) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php endif; ?>
+        <!-- Messages will be shown as toast notifications -->
 
         <!-- Search and Add Songs from YouTube -->
         <div class="admin-card mb-4">
@@ -194,7 +189,7 @@ $songs = $stmt->fetchAll();
             <!-- Manual Add (fallback) -->
             <div class="border-top pt-4 mt-4">
                 <h6 class="mb-3">Atau Tambah Manual</h6>
-                <form method="POST">
+                <form method="POST" id="manual-add-form">
                     <input type="hidden" name="action" value="add_song">
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -210,7 +205,7 @@ $songs = $stmt->fetchAll();
                         <label for="title" class="form-label">Song Title (Optional - will auto-fetch from YouTube)</label>
                         <input type="text" class="form-control" id="title" name="title" placeholder="Leave empty to auto-fetch">
                     </div>
-                    <button type="submit" class="btn btn-secondary">
+                    <button type="submit" class="btn btn-secondary" id="manual-add-btn">
                         <i class="fas fa-plus me-2"></i>Add Manual
                     </button>
                 </form>
@@ -349,6 +344,12 @@ $songs = $stmt->fetchAll();
 
         async function addSongFromSearch(videoId, title, artist) {
             try {
+                // Show loading state
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+                button.disabled = true;
+
                 const response = await fetch('', {
                     method: 'POST',
                     headers: {
@@ -359,11 +360,95 @@ $songs = $stmt->fetchAll();
 
                 const text = await response.text();
                 
-                // Reload page to show updated song list
-                location.reload();
+                // Show success notification
+                showToast('Lagu berhasil ditambahkan!', 'success');
+                
+                // Wait 1 second then reload
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
             } catch (error) {
-                alert('Error adding song: ' + error.message);
+                showToast('Error: ' + error.message, 'error');
+                // Reset button
+                button.innerHTML = originalText;
+                button.disabled = false;
             }
+        }
+
+        function showToast(message, type = 'success') {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-notification ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
+                    ${message}
+                </div>
+            `;
+            
+            // Add toast styles if not exists
+            if (!document.getElementById('toast-styles')) {
+                const style = document.createElement('style');
+                style.id = 'toast-styles';
+                style.textContent = `
+                    .toast-notification {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 15px 20px;
+                        border-radius: 8px;
+                        color: white;
+                        font-weight: 500;
+                        z-index: 9999;
+                        animation: slideInRight 0.3s ease-out;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    }
+                    .toast-notification.success {
+                        background: linear-gradient(135deg, #28a745, #20c997);
+                    }
+                    .toast-notification.error {
+                        background: linear-gradient(135deg, #dc3545, #e74c3c);
+                    }
+                    .toast-content {
+                        display: flex;
+                        align-items: center;
+                    }
+                    @keyframes slideInRight {
+                        from {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOutRight {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(100%);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Add to page
+            document.body.appendChild(toast);
+            
+            // Auto remove after 1 second
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease-in forwards';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 1000);
         }
 
         // Allow search on Enter key
@@ -372,6 +457,53 @@ $songs = $stmt->fetchAll();
                 searchYouTube();
             }
         });
+
+        // Handle manual form submission
+        document.getElementById('manual-add-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const button = document.getElementById('manual-add-btn');
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
+            button.disabled = true;
+            
+            const formData = new FormData(this);
+            
+            fetch('', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Check if success (simple check for "successfully" in response)
+                if (data.includes('successfully') || data.includes('berhasil')) {
+                    showToast('Lagu berhasil ditambahkan!', 'success');
+                    this.reset(); // Clear form
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    // Extract error message if possible
+                    const errorMatch = data.match(/Error: ([^<]+)/);
+                    const errorMsg = errorMatch ? errorMatch[1] : 'Gagal menambahkan lagu';
+                    showToast(errorMsg, 'error');
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                showToast('Error: ' + error.message, 'error');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            });
+        });
+
+        // Show existing PHP messages as toast if exists
+        <?php if ($message && $messageType): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('<?= addslashes($message) ?>', '<?= $messageType === 'success' ? 'success' : 'error' ?>');
+        });
+        <?php endif; ?>
     </script>
 </body>
 </html>
