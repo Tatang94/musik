@@ -3,9 +3,15 @@ class MusicReward {
         this.currentPlayer = null;
         this.currentSongId = null;
         this.startTime = null;
+        this.pausedTime = 0; // Total time spent paused
+        this.songProgress = 0; // Current song position in seconds
+        this.lastPauseTime = null; // When the song was paused
+        this.isPlaying = false;
+        this.isPaused = false;
         this.minutesListened = 0;
         this.rewardEarned = 0;
         this.updateTimer = null;
+        this.progressTimer = null;
         this.userBalance = 0;
         
         this.initializeEventListeners();
@@ -56,6 +62,9 @@ class MusicReward {
             if (result.success) {
                 this.currentSongId = songId;
                 this.startTime = Date.now();
+                this.pausedTime = 0;
+                this.songProgress = 0;
+                this.lastPauseTime = null;
                 this.minutesListened = 0;
                 this.rewardEarned = 0;
                 
@@ -124,18 +133,19 @@ class MusicReward {
     
     startProgressTracking() {
         // Simulate progress tracking since we can't access YouTube iframe API directly
-        let progress = 0;
         const duration = 180; // Assume 3 minutes average song length
         
         this.progressTimer = setInterval(() => {
-            progress += 1;
-            const percentage = (progress / duration) * 100;
+            if (this.isPaused) return; // Don't update progress when paused
+            
+            this.songProgress += 1;
+            const percentage = (this.songProgress / duration) * 100;
             
             document.getElementById('progress-bar').style.width = percentage + '%';
-            document.getElementById('current-time').textContent = this.formatTime(progress);
+            document.getElementById('current-time').textContent = this.formatTime(this.songProgress);
             document.getElementById('total-time').textContent = this.formatTime(duration);
             
-            if (progress >= duration) {
+            if (this.songProgress >= duration) {
                 this.onSongEnd();
                 clearInterval(this.progressTimer);
             }
@@ -148,10 +158,17 @@ class MusicReward {
         }
         
         this.updateTimer = setInterval(() => {
-            if (this.isPaused) return; // Don't track when paused
-            
             const currentTime = Date.now();
-            const elapsedSeconds = Math.floor((currentTime - this.startTime) / 1000);
+            
+            // Calculate actual elapsed time (excluding paused periods)
+            let totalElapsedMs = currentTime - this.startTime - this.pausedTime;
+            
+            // If currently paused, subtract the current pause duration
+            if (this.isPaused && this.lastPauseTime) {
+                totalElapsedMs -= (currentTime - this.lastPauseTime);
+            }
+            
+            const elapsedSeconds = Math.floor(totalElapsedMs / 1000);
             const elapsedMinutes = Math.floor(elapsedSeconds / 60);
             
             // Update UI every second for smooth experience
@@ -159,8 +176,8 @@ class MusicReward {
             const displaySeconds = elapsedSeconds % 60;
             document.getElementById('listening-time').textContent = `${displayMinutes}:${displaySeconds.toString().padStart(2, '0')}`;
             
-            // Update reward and balance every minute
-            if (elapsedMinutes > this.minutesListened) {
+            // Update reward and balance every minute (only when not paused)
+            if (!this.isPaused && elapsedMinutes > this.minutesListened) {
                 this.minutesListened = elapsedMinutes;
                 this.rewardEarned = this.minutesListened * 0.5;
                 
@@ -230,13 +247,8 @@ class MusicReward {
             this.isPaused = true;
             this.pauseTracking();
             
-            // Control YouTube iframe by recreating with different URL
-            if (this.playerIframe) {
-                const currentSrc = this.playerIframe.src;
-                const videoId = currentSrc.match(/embed\/([^?]+)/)[1];
-                // Pause by replacing with static thumbnail
-                this.playerIframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}&controls=0`;
-            }
+            // YouTube iframe remains playing but we track pause state
+            // We can't actually pause the iframe player reliably, but we track the pause state
         } else {
             // Play/Resume
             icon.classList.remove('fa-play');
@@ -244,33 +256,21 @@ class MusicReward {
             this.isPaused = false;
             this.resumeTracking();
             
-            // Resume YouTube playback
-            if (this.playerIframe) {
-                const currentSrc = this.playerIframe.src;
-                const videoId = currentSrc.match(/embed\/([^?]+)/)[1];
-                this.playerIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${window.location.origin}&controls=0`;
-            }
+            // Resume tracking - YouTube iframe continues playing
         }
     }
     
     pauseTracking() {
-        if (this.updateTimer) {
-            clearInterval(this.updateTimer);
-            this.updateTimer = null;
-        }
-        if (this.progressTimer) {
-            clearInterval(this.progressTimer);
-            this.progressTimer = null;
-        }
+        this.lastPauseTime = Date.now();
+        // Don't clear timers - just pause the tracking logic
         console.log('Tracking paused');
     }
     
     resumeTracking() {
-        if (!this.updateTimer) {
-            this.startTrackingTimer();
-        }
-        if (!this.progressTimer) {
-            this.startProgressTracking();
+        if (this.lastPauseTime) {
+            // Add the pause duration to total paused time
+            this.pausedTime += Date.now() - this.lastPauseTime;
+            this.lastPauseTime = null;
         }
         console.log('Tracking resumed');
     }
