@@ -1,11 +1,8 @@
 <?php
 // Database setup script - run this first to create tables
-$dbPath = __DIR__ . '/musikreward.db';
+require_once 'config/database.php';
 
 try {
-    $pdo = new PDO("sqlite:" . $dbPath);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     
     echo "Database connection established successfully<br>";
     
@@ -58,11 +55,23 @@ try {
             user_ip TEXT NOT NULL,
             dana_phone TEXT NOT NULL,
             amount REAL NOT NULL,
-            status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'rejected')),
+            status TEXT DEFAULT 'pending',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ");
     echo "Withdrawals table created successfully<br>";
+    
+    // Create banner_ads table for admin management
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS banner_ads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            code TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+    echo "Banner ads table created successfully<br>";
     
     echo "Database tables created successfully - ready for admin to add songs<br>";
     

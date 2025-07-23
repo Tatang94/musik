@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 Data requirements: Start with real data from zero, no sample/mock data.
 Admin login credentials: Username: 089663596711, Password: boar
 Design preference: Modern blue-purple-brown wave color scheme with modern logo and banner ad integration
+Database preference: Hosting-friendly configuration without hardcoded database names
 
 ## System Architecture
 
@@ -114,9 +115,14 @@ The application follows a clean separation of concerns with a lightweight fronte
 - ✓ Admin panel for banner management at `/admin/banner_ads.php`
 - ✓ Dynamic banner loading API
 - ✓ Banner display below "listen to music and earn" text
+- ✓ YouTube Iframe API integration for synchronized play/pause
+- ✓ Delete song functionality in admin panel
 
 ### Technical Improvements
 - ✓ Enhanced security with proper client/server separation
 - ✓ Responsive design optimizations
 - ✓ Modern CSS animations and transitions
 - ✓ Error handling and LSP diagnostics addressed
+- ✓ Hosting-friendly database configuration (no hardcoded names)
+- ✓ Environment variable support for database paths
+- ✓ Added .htaccess for security and performance
