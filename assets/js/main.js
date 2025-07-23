@@ -53,7 +53,7 @@ class MusicReward {
             cardElement.classList.add('loading');
             
             // Stop current song if playing
-            if (this.currentPlayer) {
+            if (this.player) {
                 this.stopCurrentSong();
             }
             
@@ -142,7 +142,7 @@ class MusicReward {
         // Calculate responsive height for mobile
         const containerWidth = playerContainer.offsetWidth || 300;
         const aspectRatio = 9/16; // 16:9 aspect ratio
-        const playerHeight = Math.max(200, containerWidth * aspectRatio);
+        const playerHeight = Math.max(200, Math.min(315, containerWidth * aspectRatio));
         
         this.player = new YT.Player('youtube-player', {
             height: playerHeight,
