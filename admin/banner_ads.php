@@ -14,10 +14,10 @@ if ($_POST) {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS banner_ads (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    script_code TEXT,
-                    is_active INTEGER DEFAULT 0,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    title TEXT NOT NULL,
+                    code TEXT NOT NULL,
+                    is_active INTEGER DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             ");
             
@@ -25,8 +25,8 @@ if ($_POST) {
             $pdo->exec("UPDATE banner_ads SET is_active = 0");
             
             // Insert new banner
-            $stmt = $pdo->prepare("INSERT INTO banner_ads (script_code, is_active) VALUES (?, ?)");
-            $stmt->execute([$banner_script, $is_active]);
+            $stmt = $pdo->prepare("INSERT INTO banner_ads (title, code, is_active) VALUES (?, ?, ?)");
+            $stmt->execute(['Adsterra Banner', $banner_script, $is_active]);
             
             $success_message = "Banner berhasil disimpan!";
         }
