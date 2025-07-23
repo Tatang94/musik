@@ -138,3 +138,5 @@ The application follows a clean separation of concerns with a lightweight fronte
 - ✓ **IMPROVED**: YouTube player positioned above song list without floating controls
 - ✓ **FIXED**: JavaScript DOM errors with null reference checks
 - ✓ **NEW**: Admin panel bulk song management with Select All/Deselect All options
+- ✓ **NEW**: Bulk delete functionality for mass song removal in admin panel
+- ✓ **FIXED**: YouTube ads configuration - removed ad-blocking parameters to ensure native YouTube ads display properly

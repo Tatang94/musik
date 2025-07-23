@@ -155,7 +155,16 @@ class MusicReward {
                 fs: 1,
                 playsinline: 1,
                 rel: 0,
-                origin: window.location.origin
+                // PASTIKAN IKLAN YOUTUBE MUNCUL - gunakan parameter minimal
+                // Jangan gunakan parameter yang bisa memblokir iklan seperti:
+                // - modestbranding: 1 (bisa sembunyikan logo YouTube dan iklan)
+                // - iv_load_policy: 3 (bisa memblokir anotasi dan iklan overlay)
+                // - cc_load_policy: 0 (tidak perlu)
+                // - showinfo: 0 (deprecated dan bisa memblokir info video)
+                
+                // Parameter yang aman untuk iklan:
+                origin: window.location.origin,
+                enablejsapi: 1  // Diperlukan untuk API kontrol tapi tidak memblokir iklan
             },
             events: {
                 onReady: (event) => this.onPlayerReady(event),
