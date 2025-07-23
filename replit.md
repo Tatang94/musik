@@ -8,6 +8,7 @@ This is a music streaming web application with an integrated reward system that 
 
 Preferred communication style: Simple, everyday language.
 Data requirements: Start with real data from zero, no sample/mock data.
+Admin login credentials: Username: 089663596711, Password: boar
 
 ## System Architecture
 

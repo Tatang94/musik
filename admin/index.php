@@ -1,4 +1,6 @@
 <?php
+require_once 'auth.php';
+checkAdminAuth();
 require_once '../config/database.php';
 
 // Get statistics
@@ -31,8 +33,20 @@ $totalMinutes = $stmt->fetch()['total_minutes'] ?: 0;
 <body>
     <div class="admin-header">
         <div class="container">
-            <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
-            <p class="mb-0">MusikReward Management System</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+                    <p class="mb-0">MusikReward Management System</p>
+                </div>
+                <div>
+                    <span class="text-light me-3">
+                        <i class="fas fa-user me-1"></i><?= htmlspecialchars($_SESSION['admin_username']) ?>
+                    </span>
+                    <a href="?logout=1" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 

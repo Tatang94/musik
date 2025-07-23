@@ -1,4 +1,6 @@
 <?php
+require_once 'auth.php';
+checkAdminAuth();
 require_once '../config/database.php';
 
 $userIp = $_GET['ip'] ?? '';
