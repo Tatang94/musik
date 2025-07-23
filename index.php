@@ -49,40 +49,84 @@ $songs = $stmt->fetchAll();
             </div>
         </div>
 
-        <!-- Current Page Indicator -->
-        <div class="page-indicator mb-4">
-            <h2 class="fw-bold mb-0">Daftar Lagu</h2>
-            <p class="text-muted">Dengarkan lagu dan dapatkan Rp 0.5 per menit</p>
-            
-            <!-- Adsterra Banner Ad -->
-            <div class="ad-banner mt-3 mb-4" id="adsterra-banner">
-                <!-- Adsterra banner will be inserted here dynamically -->
-            </div>
-        </div>
-
-        <!-- Songs List -->
-        <div class="songs-container mb-5">
-            <?php foreach ($songs as $song): ?>
-            <div class="song-card" data-song-id="<?= $song['id'] ?>" data-youtube-id="<?= $song['youtube_id'] ?>">
-                <div class="song-thumbnail">
-                    <div class="play-overlay">
-                        <i class="fas fa-play play-icon"></i>
+        <!-- Landing Page Content -->
+        <div class="landing-hero">
+            <div class="hero-content text-center">
+                <div class="hero-icon mb-4">
+                    <div class="modern-logo-large">
+                        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="60" cy="60" r="55" fill="url(#heroGradient)" stroke="white" stroke-width="4"/>
+                            <path d="M45 42L84 60L45 78V42Z" fill="white"/>
+                            <circle cx="60" cy="60" r="8" fill="white" opacity="0.8"/>
+                            <defs>
+                                <linearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#FFD700"/>
+                                    <stop offset="30%" style="stop-color:#FFA500"/>
+                                    <stop offset="70%" style="stop-color:#FF6B35"/>
+                                    <stop offset="100%" style="stop-color:#8B5CF6"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
                     </div>
-                    <?php if ($song['thumbnail_url']): ?>
-                        <img src="<?= htmlspecialchars($song['thumbnail_url']) ?>" alt="<?= htmlspecialchars($song['title']) ?>">
-                    <?php else: ?>
-                        <div class="default-thumbnail gradient-bg-1"></div>
-                    <?php endif; ?>
                 </div>
-                <div class="song-info">
-                    <h6 class="song-title"><?= htmlspecialchars($song['title']) ?></h6>
-                    <p class="song-artist"><?= htmlspecialchars($song['artist']) ?></p>
+                
+                <h1 class="hero-title mb-3">MusikReward</h1>
+                <h2 class="hero-subtitle mb-4">Monetisasi Penikmat Lagu</h2>
+                
+                <p class="hero-description mb-5">
+                    Dengarkan musik favorit Anda dan dapatkan reward nyata! 
+                    Platform revolusioner yang memberikan penghasilan kepada para penikmat musik.
+                    Setiap menit mendengar = Rp 0.5 langsung ke saldo Anda.
+                </p>
+                
+                <!-- Adsterra Banner Ad -->
+                <div class="ad-banner mt-3 mb-5" id="adsterra-banner">
+                    <!-- Adsterra banner will be inserted here dynamically -->
                 </div>
-                <div class="play-button">
-                    <i class="fas fa-play text-primary"></i>
+                
+                <div class="hero-features mb-5">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <h5>Dapatkan Reward</h5>
+                                <p>Rp 0.5 setiap menit mendengar musik</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-music"></i>
+                                </div>
+                                <h5>Musik Berkualitas</h5>
+                                <p>Streaming langsung dari YouTube</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <h5>Mudah Digunakan</h5>
+                                <p>Interface modern dan responsif</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero-cta">
+                    <button onclick="window.location.href='songs.php'" class="btn-cta">
+                        <i class="fas fa-play me-2"></i>
+                        Mulai Sekarang
+                    </button>
+                    <p class="cta-note mt-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Gratis untuk memulai • Tanpa biaya tersembunyi
+                    </p>
                 </div>
             </div>
-            <?php endforeach; ?>
         </div>
 
         <!-- Music Player (Hidden by default) -->
