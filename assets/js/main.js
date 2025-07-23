@@ -128,6 +128,7 @@ class MusicReward {
         
         // Create YouTube player using IFrame API
         this.currentVideoId = videoId;
+        this.playerContainer = playerContainer; // Store reference
         this.initYouTubePlayer(videoId);
     }
     
@@ -140,7 +141,7 @@ class MusicReward {
         }
         
         // Calculate responsive height for mobile
-        const containerWidth = playerContainer.offsetWidth || 300;
+        const containerWidth = this.playerContainer ? (this.playerContainer.offsetWidth || 300) : 300;
         const aspectRatio = 9/16; // 16:9 aspect ratio
         const playerHeight = Math.max(200, Math.min(315, containerWidth * aspectRatio));
         
