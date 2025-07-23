@@ -49,6 +49,71 @@ if ($_POST) {
                 }
                 break;
                 
+            case 'add_songs_bulk':
+                try {
+                    $selectedSongs = json_decode($_POST['selected_songs'], true);
+                    if (!$selectedSongs || !is_array($selectedSongs)) {
+                        throw new Exception('No songs selected');
+                    }
+                    
+                    $youtube = new YouTubeAPI();
+                    $addedCount = 0;
+                    $skippedCount = 0;
+                    $errors = [];
+                    
+                    foreach ($selectedSongs as $songData) {
+                        try {
+                            $youtubeId = $songData['videoId'];
+                            $title = $songData['title'];
+                            $artist = $songData['channelTitle'];
+                            
+                            // Check if song already exists
+                            $stmt = $pdo->prepare("SELECT id FROM songs WHERE youtube_id = ?");
+                            $stmt->execute([$youtubeId]);
+                            if ($stmt->fetch()) {
+                                $skippedCount++;
+                                continue;
+                            }
+                            
+                            // Get video details from YouTube API for duration and high-quality thumbnail
+                            $videoDetails = $youtube->getVideoDetails($youtubeId);
+                            
+                            if ($videoDetails) {
+                                $stmt = $pdo->prepare("INSERT INTO songs (youtube_id, title, artist, thumbnail_url, duration) VALUES (?, ?, ?, ?, ?)");
+                                $stmt->execute([
+                                    $youtubeId,
+                                    $title,
+                                    $artist,
+                                    $videoDetails['thumbnail'],
+                                    $videoDetails['duration']
+                                ]);
+                                $addedCount++;
+                            } else {
+                                $errors[] = "Failed to get details for: $title";
+                            }
+                        } catch (Exception $e) {
+                            $errors[] = "Error adding '$title': " . $e->getMessage();
+                        }
+                    }
+                    
+                    $message = "Successfully added $addedCount songs";
+                    if ($skippedCount > 0) {
+                        $message .= ", skipped $skippedCount existing songs";
+                    }
+                    if (!empty($errors)) {
+                        $message .= ". Errors: " . implode(', ', array_slice($errors, 0, 3));
+                        if (count($errors) > 3) {
+                            $message .= " and " . (count($errors) - 3) . " more";
+                        }
+                    }
+                    $messageType = 'success';
+                    
+                } catch (Exception $e) {
+                    $message = 'Error: ' . $e->getMessage();
+                    $messageType = 'danger';
+                }
+                break;
+                
             case 'add_song_from_search':
                 try {
                     $youtubeId = $_POST['youtube_id'];
@@ -180,7 +245,20 @@ $songs = $stmt->fetchAll();
 
             <!-- Search Results -->
             <div id="search-results" style="display: none;">
-                <h6 class="mb-3">Hasil Pencarian:</h6>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Hasil Pencarian:</h6>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllSongs()">
+                            <i class="fas fa-check-square me-1"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="deselectAllSongs()">
+                            <i class="fas fa-square me-1"></i>Deselect All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" onclick="addSelectedSongs()" id="add-selected-btn" disabled>
+                            <i class="fas fa-plus-circle me-1"></i>Add Selected (<span id="selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
                 <div id="search-results-container" class="row">
                     <!-- Results will be loaded here -->
                 </div>
@@ -319,13 +397,22 @@ $songs = $stmt->fetchAll();
                         html += `
                             <div class="col-md-6 col-lg-4 mb-3">
                                 <div class="card h-100">
-                                    <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                                    <div class="position-relative">
+                                        <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                                        <div class="position-absolute top-0 start-0 p-2">
+                                            <input type="checkbox" class="form-check-input song-checkbox" 
+                                                   data-video-id="${video.videoId}" 
+                                                   data-title="${video.title.replace(/"/g, '&quot;')}" 
+                                                   data-channel="${video.channelTitle.replace(/"/g, '&quot;')}"
+                                                   onchange="updateSelectedCount()">
+                                        </div>
+                                    </div>
                                     <div class="card-body d-flex flex-column">
                                         <h6 class="card-title" style="font-size: 0.9rem; line-height: 1.2;">${video.title}</h6>
                                         <p class="card-text text-muted small">${video.channelTitle}</p>
                                         <div class="mt-auto">
-                                            <button class="btn btn-success btn-sm w-100" onclick="addSongFromSearch('${video.videoId}', '${video.title.replace(/'/g, "\\'")}', '${video.channelTitle.replace(/'/g, "\\'")}')">
-                                                <i class="fas fa-plus me-1"></i>Add Song
+                                            <button class="btn btn-outline-success btn-sm w-100 mb-2" onclick="addSongFromSearch('${video.videoId}', '${video.title.replace(/'/g, "\\'")}', '${video.channelTitle.replace(/'/g, "\\'")}')">
+                                                <i class="fas fa-plus me-1"></i>Add This Song
                                             </button>
                                         </div>
                                     </div>
@@ -334,12 +421,118 @@ $songs = $stmt->fetchAll();
                         `;
                     });
                     containerDiv.innerHTML = html;
+                    updateSelectedCount();
                 } else {
                     containerDiv.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Tidak ada hasil ditemukan</p></div>';
                 }
             } catch (error) {
                 containerDiv.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Error: ' + error.message + '</p></div>';
             }
+        }
+
+        function selectAllSongs() {
+            document.querySelectorAll('.song-checkbox').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelectedCount();
+        }
+
+        function deselectAllSongs() {
+            document.querySelectorAll('.song-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selectedCount = document.querySelectorAll('.song-checkbox:checked').length;
+            document.getElementById('selected-count').textContent = selectedCount;
+            document.getElementById('add-selected-btn').disabled = selectedCount === 0;
+        }
+
+        async function addSelectedSongs() {
+            const selectedCheckboxes = document.querySelectorAll('.song-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('Pilih minimal satu lagu');
+                return;
+            }
+
+            const selectedSongs = Array.from(selectedCheckboxes).map(checkbox => ({
+                videoId: checkbox.dataset.videoId,
+                title: checkbox.dataset.title,
+                channelTitle: checkbox.dataset.channel
+            }));
+
+            if (!confirm(`Apakah Anda yakin ingin menambahkan ${selectedSongs.length} lagu ke playlist?`)) {
+                return;
+            }
+
+            const addBtn = document.getElementById('add-selected-btn');
+            const originalText = addBtn.innerHTML;
+            addBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+            addBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('action', 'add_songs_bulk');
+                formData.append('selected_songs', JSON.stringify(selectedSongs));
+
+                const response = await fetch('songs.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showToast('Lagu-lagu berhasil ditambahkan ke playlist!', 'success');
+                    // Reset checkboxes
+                    deselectAllSongs();
+                    // Reload page to see updated song list
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    throw new Error('Server error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'danger');
+            } finally {
+                addBtn.innerHTML = originalText;
+                addBtn.disabled = false;
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            // Remove any existing toasts
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // Create toast element
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'danger' ? 'danger' : 'primary'} border-0" 
+                     role="alert" aria-live="assertive" aria-atomic="true" 
+                     style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Show the toast
+            const toastElement = document.querySelector('.toast');
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (toastElement) {
+                    toastElement.remove();
+                }
+            }, 5000);
         }
 
         async function addSongFromSearch(videoId, title, artist) {
@@ -368,88 +561,22 @@ $songs = $stmt->fetchAll();
                     location.reload();
                 }, 1000);
             } catch (error) {
-                showToast('Error: ' + error.message, 'error');
+                showToast('Error: ' + error.message, 'danger');
                 // Reset button
                 button.innerHTML = originalText;
                 button.disabled = false;
             }
         }
 
-        function showToast(message, type = 'success') {
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = `toast-notification ${type}`;
-            toast.innerHTML = `
-                <div class="toast-content">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
-                    ${message}
-                </div>
-            `;
-            
-            // Add toast styles if not exists
-            if (!document.getElementById('toast-styles')) {
-                const style = document.createElement('style');
-                style.id = 'toast-styles';
-                style.textContent = `
-                    .toast-notification {
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        padding: 15px 20px;
-                        border-radius: 8px;
-                        color: white;
-                        font-weight: 500;
-                        z-index: 9999;
-                        animation: slideInRight 0.3s ease-out;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    }
-                    .toast-notification.success {
-                        background: linear-gradient(135deg, #28a745, #20c997);
-                    }
-                    .toast-notification.error {
-                        background: linear-gradient(135deg, #dc3545, #e74c3c);
-                    }
-                    .toast-content {
-                        display: flex;
-                        align-items: center;
-                    }
-                    @keyframes slideInRight {
-                        from {
-                            transform: translateX(100%);
-                            opacity: 0;
-                        }
-                        to {
-                            transform: translateX(0);
-                            opacity: 1;
-                        }
-                    }
-                    @keyframes slideOutRight {
-                        from {
-                            transform: translateX(0);
-                            opacity: 1;
-                        }
-                        to {
-                            transform: translateX(100%);
-                            opacity: 0;
-                        }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Add to page
-            document.body.appendChild(toast);
-            
-            // Auto remove after 1 second
-            setTimeout(() => {
-                toast.style.animation = 'slideOutRight 0.3s ease-in forwards';
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }, 1000);
-        }
+        // Show PHP messages as toasts
+        <?php if ($message): ?>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('<?= addslashes($message) ?>', '<?= $messageType ?>');
+        });
+        <?php endif; ?>
+    </script>
+</body>
+</html>
 
         // Allow search on Enter key
         document.getElementById('search_query').addEventListener('keypress', function(e) {
