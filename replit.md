@@ -121,6 +121,8 @@ The application follows a clean separation of concerns with a lightweight fronte
 - ✓ **NEW**: Landing page with "Monetisasi Penikmat Lagu" branding
 - ✓ **NEW**: Call-to-action "Mulai Sekarang" button redirecting to songs.php
 - ✓ **NEW**: Feature cards highlighting rewards, music quality, and ease of use
+- ✓ **NEW**: Bulk add songs feature in admin panel with checkbox selection
+- ✓ **NEW**: Mass song import from YouTube channels/artists search results
 
 ### Technical Improvements
 - ✓ Enhanced security with proper client/server separation
@@ -133,4 +135,6 @@ The application follows a clean separation of concerns with a lightweight fronte
 - ✓ **NEW**: Clean database starting from zero (no sample data)
 - ✓ **NEW**: Removed all temporary and sample files
 - ✓ **FIXED**: YouTube ads visibility issue - player now displayed properly
-- ✓ **IMPROVED**: YouTube player with minimize/maximize functionality
+- ✓ **IMPROVED**: YouTube player positioned above song list without floating controls
+- ✓ **FIXED**: JavaScript DOM errors with null reference checks
+- ✓ **NEW**: Admin panel bulk song management with Select All/Deselect All options

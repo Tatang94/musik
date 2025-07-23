@@ -585,63 +585,19 @@ $songs = $stmt->fetchAll();
             showToast('<?= addslashes($message) ?>', '<?= $messageType ?>');
         });
         <?php endif; ?>
-    </script>
-</body>
-</html>
-
-        // Allow search on Enter key
-        document.getElementById('search_query').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchYouTube();
+        
+        // Initialize after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Allow search on Enter key
+            const searchInput = document.getElementById('search_query');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchYouTube();
+                    }
+                });
             }
         });
-
-        // Handle manual form submission
-        document.getElementById('manual-add-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const button = document.getElementById('manual-add-btn');
-            const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Adding...';
-            button.disabled = true;
-            
-            const formData = new FormData(this);
-            
-            fetch('', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.text())
-            .then(data => {
-                // Check if success (simple check for "successfully" in response)
-                if (data.includes('successfully') || data.includes('berhasil')) {
-                    showToast('Lagu berhasil ditambahkan!', 'success');
-                    this.reset(); // Clear form
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1000);
-                } else {
-                    // Extract error message if possible
-                    const errorMatch = data.match(/Error: ([^<]+)/);
-                    const errorMsg = errorMatch ? errorMatch[1] : 'Gagal menambahkan lagu';
-                    showToast(errorMsg, 'error');
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }
-            })
-            .catch(error => {
-                showToast('Error: ' + error.message, 'error');
-                button.innerHTML = originalText;
-                button.disabled = false;
-            });
-        });
-
-        // Show existing PHP messages as toast if exists
-        <?php if ($message && $messageType): ?>
-        document.addEventListener('DOMContentLoaded', function() {
-            showToast('<?= addslashes($message) ?>', '<?= $messageType === 'success' ? 'success' : 'error' ?>');
-        });
-        <?php endif; ?>
     </script>
 </body>
 </html>
