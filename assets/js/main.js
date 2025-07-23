@@ -8,6 +8,7 @@ class MusicReward {
         this.lastPauseTime = null; // When the song was paused
         this.isPlaying = false;
         this.isPaused = false;
+        this.isToggling = false; // Prevent rapid button clicks
         this.minutesListened = 0;
         this.rewardEarned = 0;
         this.updateTimer = null;
@@ -29,10 +30,20 @@ class MusicReward {
             });
         });
         
-        // Play/pause button
-        document.getElementById('play-pause-btn')?.addEventListener('click', () => {
-            this.togglePlayPause();
-        });
+        // Play/pause button (remove existing listeners first)
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        if (playPauseBtn) {
+            // Clone node to remove all event listeners
+            const newBtn = playPauseBtn.cloneNode(true);
+            playPauseBtn.parentNode.replaceChild(newBtn, playPauseBtn);
+            
+            // Add single event listener
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.togglePlayPause();
+            });
+        }
     }
     
     async playSong(songId, youtubeId, cardElement) {
@@ -112,12 +123,15 @@ class MusicReward {
         this.playerIframe = document.getElementById('youtube-player');
         this.isPlaying = true;
         this.isPaused = false;
+        this.isToggling = false;
         
         // Update play button to pause state initially
         const playBtn = document.getElementById('play-pause-btn');
-        const icon = playBtn.querySelector('i');
-        icon.classList.remove('fa-play');
-        icon.classList.add('fa-pause');
+        if (playBtn) {
+            const icon = playBtn.querySelector('i');
+            icon.classList.remove('fa-play');
+            icon.classList.add('fa-pause');
+        }
         
         // Simulate player ready state
         setTimeout(() => {
@@ -237,27 +251,39 @@ class MusicReward {
     }
     
     togglePlayPause() {
+        // Prevent multiple rapid clicks
+        if (this.isToggling) return;
+        this.isToggling = true;
+        
         const btn = document.getElementById('play-pause-btn');
         const icon = btn.querySelector('i');
         
-        if (this.isPlaying && !this.isPaused) {
-            // Pause
+        if (!this.isPlaying) {
+            // Song is not playing at all
+            this.isToggling = false;
+            return;
+        }
+        
+        if (!this.isPaused) {
+            // Currently playing - pause it
+            console.log('Pausing playback');
             icon.classList.remove('fa-pause');
             icon.classList.add('fa-play');
             this.isPaused = true;
             this.pauseTracking();
-            
-            // YouTube iframe remains playing but we track pause state
-            // We can't actually pause the iframe player reliably, but we track the pause state
         } else {
-            // Play/Resume
+            // Currently paused - resume it
+            console.log('Resuming playback');
             icon.classList.remove('fa-play');
             icon.classList.add('fa-pause');
             this.isPaused = false;
             this.resumeTracking();
-            
-            // Resume tracking - YouTube iframe continues playing
         }
+        
+        // Allow next toggle after a brief delay
+        setTimeout(() => {
+            this.isToggling = false;
+        }, 500);
     }
     
     pauseTracking() {
