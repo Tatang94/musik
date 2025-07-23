@@ -10,8 +10,17 @@ if (!$userIp) {
     exit;
 }
 
-// Get user details
-$stmt = $pdo->prepare("SELECT * FROM users WHERE user_ip = ?");
+// Get user details with calculated totals
+$stmt = $pdo->prepare("
+    SELECT u.*, 
+           COALESCE(SUM(ls.minutes_listened), 0) as total_minutes_listened,
+           COALESCE(SUM(ls.reward_earned), 0) as total_rewards_earned,
+           COALESCE(COUNT(ls.id), 0) as total_sessions
+    FROM users u
+    LEFT JOIN listening_sessions ls ON u.user_ip = ls.user_ip
+    WHERE u.user_ip = ?
+    GROUP BY u.id
+");
 $stmt->execute([$userIp]);
 $user = $stmt->fetch();
 
@@ -52,7 +61,7 @@ $withdrawals = $stmt->fetchAll();
             </tr>
             <tr>
                 <td><strong>Total Minutes:</strong></td>
-                <td><?= number_format($user['total_minutes']) ?> minutes</td>
+                <td><?= number_format($user['total_minutes_listened']) ?> minutes</td>
             </tr>
             <tr>
                 <td><strong>Join Date:</strong></td>
@@ -65,7 +74,7 @@ $withdrawals = $stmt->fetchAll();
         <table class="table table-sm">
             <tr>
                 <td><strong>Listening Sessions:</strong></td>
-                <td><?= count($sessions) ?></td>
+                <td><?= number_format($user['total_sessions']) ?></td>
             </tr>
             <tr>
                 <td><strong>Withdrawal Requests:</strong></td>
