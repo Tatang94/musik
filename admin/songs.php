@@ -49,6 +49,47 @@ if ($_POST) {
                 }
                 break;
                 
+            case 'add_song_from_search':
+                try {
+                    $youtubeId = $_POST['youtube_id'];
+                    $title = $_POST['title'];
+                    $artist = $_POST['artist'];
+                    
+                    // Check if song already exists
+                    $stmt = $pdo->prepare("SELECT id FROM songs WHERE youtube_id = ?");
+                    $stmt->execute([$youtubeId]);
+                    if ($stmt->fetch()) {
+                        throw new Exception('Song already exists in the playlist');
+                    }
+                    
+                    // Get video details from YouTube API for duration and high-quality thumbnail
+                    $youtube = new YouTubeAPI();
+                    $videoDetails = $youtube->getVideoDetails($youtubeId);
+                    
+                    if ($videoDetails) {
+                        $stmt = $pdo->prepare("INSERT INTO songs (youtube_id, title, artist, thumbnail_url, duration) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->execute([
+                            $youtubeId,
+                            $title,
+                            $artist,
+                            $videoDetails['thumbnail'],
+                            $videoDetails['duration']
+                        ]);
+                        $message = 'Song added successfully from search!';
+                        $messageType = 'success';
+                    } else {
+                        // Fallback - add without detailed info
+                        $stmt = $pdo->prepare("INSERT INTO songs (youtube_id, title, artist) VALUES (?, ?, ?)");
+                        $stmt->execute([$youtubeId, $title, $artist]);
+                        $message = 'Song added successfully (basic info)!';
+                        $messageType = 'success';
+                    }
+                } catch (Exception $e) {
+                    $message = 'Error: ' . $e->getMessage();
+                    $messageType = 'danger';
+                }
+                break;
+                
             case 'toggle_status':
                 try {
                     $songId = $_POST['song_id'];
@@ -122,29 +163,58 @@ $songs = $stmt->fetchAll();
         </div>
         <?php endif; ?>
 
-        <!-- Add New Song -->
+        <!-- Search and Add Songs from YouTube -->
         <div class="admin-card mb-4">
-            <h5 class="mb-4">Add New Song</h5>
-            <form method="POST">
-                <input type="hidden" name="action" value="add_song">
+            <h5 class="mb-4">Search Songs from YouTube</h5>
+            
+            <!-- Search Form -->
+            <div class="mb-4">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="youtube_id" class="form-label">YouTube Video ID or URL</label>
-                        <input type="text" class="form-control" id="youtube_id" name="youtube_id" required placeholder="dQw4w9WgXcQ or full YouTube URL">
+                    <div class="col-md-8 mb-3">
+                        <label for="search_query" class="form-label">Search YouTube</label>
+                        <input type="text" class="form-control" id="search_query" placeholder="Cari lagu, artis, atau kata kunci..." />
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="artist" class="form-label">Artist Name</label>
-                        <input type="text" class="form-control" id="artist" name="artist" required placeholder="Artist Name">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-primary w-100" onclick="searchYouTube()">
+                            <i class="fas fa-search me-2"></i>Search
+                        </button>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label for="title" class="form-label">Song Title (Optional - will auto-fetch from YouTube)</label>
-                    <input type="text" class="form-control" id="title" name="title" placeholder="Leave empty to auto-fetch">
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results" style="display: none;">
+                <h6 class="mb-3">Hasil Pencarian:</h6>
+                <div id="search-results-container" class="row">
+                    <!-- Results will be loaded here -->
                 </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add Song
-                </button>
-            </form>
+            </div>
+
+            <!-- Manual Add (fallback) -->
+            <div class="border-top pt-4 mt-4">
+                <h6 class="mb-3">Atau Tambah Manual</h6>
+                <form method="POST">
+                    <input type="hidden" name="action" value="add_song">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="youtube_id" class="form-label">YouTube Video ID or URL</label>
+                            <input type="text" class="form-control" id="youtube_id" name="youtube_id" required placeholder="dQw4w9WgXcQ or full YouTube URL">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="artist" class="form-label">Artist Name</label>
+                            <input type="text" class="form-control" id="artist" name="artist" required placeholder="Artist Name">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Song Title (Optional - will auto-fetch from YouTube)</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="Leave empty to auto-fetch">
+                    </div>
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="fas fa-plus me-2"></i>Add Manual
+                    </button>
+                </form>
+            </div>
         </div>
 
         <!-- Songs List -->
@@ -222,5 +292,86 @@ $songs = $stmt->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        async function searchYouTube() {
+            const query = document.getElementById('search_query').value.trim();
+            if (!query) {
+                alert('Masukkan kata kunci pencarian');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('search-results');
+            const containerDiv = document.getElementById('search-results-container');
+            
+            // Show loading
+            containerDiv.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"></div><p class="mt-2">Mencari lagu...</p></div>';
+            resultsDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('search_youtube.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.videos.length > 0) {
+                    let html = '';
+                    result.videos.forEach(video => {
+                        html += `
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <img src="${video.thumbnail}" class="card-img-top" alt="${video.title}" style="height: 200px; object-fit: cover;">
+                                    <div class="card-body d-flex flex-column">
+                                        <h6 class="card-title" style="font-size: 0.9rem; line-height: 1.2;">${video.title}</h6>
+                                        <p class="card-text text-muted small">${video.channelTitle}</p>
+                                        <div class="mt-auto">
+                                            <button class="btn btn-success btn-sm w-100" onclick="addSongFromSearch('${video.videoId}', '${video.title.replace(/'/g, "\\'")}', '${video.channelTitle.replace(/'/g, "\\'")}')">
+                                                <i class="fas fa-plus me-1"></i>Add Song
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    containerDiv.innerHTML = html;
+                } else {
+                    containerDiv.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Tidak ada hasil ditemukan</p></div>';
+                }
+            } catch (error) {
+                containerDiv.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Error: ' + error.message + '</p></div>';
+            }
+        }
+
+        async function addSongFromSearch(videoId, title, artist) {
+            try {
+                const response = await fetch('', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=add_song_from_search&youtube_id=${videoId}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`
+                });
+
+                const text = await response.text();
+                
+                // Reload page to show updated song list
+                location.reload();
+            } catch (error) {
+                alert('Error adding song: ' + error.message);
+            }
+        }
+
+        // Allow search on Enter key
+        document.getElementById('search_query').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchYouTube();
+            }
+        });
+    </script>
 </body>
 </html>
