@@ -175,10 +175,15 @@ if ($_POST) {
                 try {
                     $songId = $_POST['song_id'];
                     
+                    // First delete related listening sessions to avoid foreign key constraint
+                    $stmt = $pdo->prepare("DELETE FROM listening_sessions WHERE song_id = ?");
+                    $stmt->execute([$songId]);
+                    
+                    // Then delete the song
                     $stmt = $pdo->prepare("DELETE FROM songs WHERE id = ?");
                     $stmt->execute([$songId]);
                     
-                    $message = 'Song deleted successfully!';
+                    $message = 'Song and related data deleted successfully!';
                     $messageType = 'success';
                 } catch (Exception $e) {
                     $message = 'Error: ' . $e->getMessage();
@@ -198,6 +203,11 @@ if ($_POST) {
                     
                     foreach ($selectedSongs as $songId) {
                         try {
+                            // First delete related listening sessions to avoid foreign key constraint
+                            $stmt = $pdo->prepare("DELETE FROM listening_sessions WHERE song_id = ?");
+                            $stmt->execute([$songId]);
+                            
+                            // Then delete the song
                             $stmt = $pdo->prepare("DELETE FROM songs WHERE id = ?");
                             $stmt->execute([$songId]);
                             $deletedCount++;
@@ -237,7 +247,7 @@ $songs = $stmt->fetchAll();
     <title>Song Management - MusikReward Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="../assets/css/style.css" rel="stylesheet">
+    <link href="../assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
 </head>
 <body>
     <div class="admin-header">
