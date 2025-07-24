@@ -98,6 +98,9 @@ body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    min-height: 300px;
+    /* Ensure consistent layout */
+    contain: layout style;
 }
 
 /* Banner Ad Styles */
@@ -126,6 +129,10 @@ body {
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(107, 70, 193, 0.1);
+    /* Stability improvements */
+    will-change: transform;
+    backface-visibility: hidden;
+    min-height: 92px;
 }
 
 .song-card:hover {

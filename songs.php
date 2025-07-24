@@ -20,14 +20,21 @@ $songs = $stmt->fetchAll();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
     <style>
-        /* Prevent layout shift during loading */
+        /* Critical CSS for layout stability */
         .songs-container {
             min-height: 400px;
+            contain: layout style;
         }
+        
         .song-card {
             opacity: 0;
             animation: fadeInUp 0.5s ease forwards;
+            /* Prevent layout jumps */
+            transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
+        
         .song-card:nth-child(1) { animation-delay: 0.1s; }
         .song-card:nth-child(2) { animation-delay: 0.2s; }
         .song-card:nth-child(3) { animation-delay: 0.3s; }
@@ -37,12 +44,28 @@ $songs = $stmt->fetchAll();
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(20px) translateZ(0);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) translateZ(0);
             }
+        }
+        
+        /* Fix Bootstrap conflicts */
+        .main-container .song-card {
+            margin-bottom: 0 !important;
+        }
+        
+        .song-thumbnail img {
+            vertical-align: top;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* Prevent FOUT (Flash of Unstyled Text) */
+        .song-title, .song-artist {
+            font-display: swap;
         }
     </style>
 </head>
@@ -228,13 +251,35 @@ $songs = $stmt->fetchAll();
         });
     </script>
     <style>
-        /* Additional stability styles */
+        /* Enhanced loading states */
         body:not(.loaded) .songs-container {
             opacity: 0.7;
+            transform: translateY(10px);
         }
+        
         body.loaded .songs-container {
             opacity: 1;
-            transition: opacity 0.3s ease;
+            transform: translateY(0);
+            transition: all 0.4s ease;
+        }
+        
+        /* Performance optimizations */
+        .song-card:hover {
+            will-change: transform;
+        }
+        
+        .song-card:not(:hover) {
+            will-change: auto;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Fix any Bootstrap margin conflicts */
+        .songs-container .song-card {
+            margin: 0 !important;
         }
     </style>
 </body>
