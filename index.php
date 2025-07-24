@@ -18,7 +18,129 @@ $songs = $stmt->fetchAll();
     <title>MusikReward - Dengar Musik Dapat Reward</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
+    <style>
+        /* Critical CSS for landing page stability */
+        .landing-hero {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            contain: layout style;
+        }
+        
+        .hero-content {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 0.2s;
+        }
+        
+        .modern-logo-large {
+            opacity: 0;
+            animation: logoFadeIn 1s ease forwards;
+            animation-delay: 0.1s;
+        }
+        
+        .hero-title {
+            opacity: 0;
+            animation: slideInFromLeft 0.8s ease forwards;
+            animation-delay: 0.4s;
+        }
+        
+        .hero-subtitle {
+            opacity: 0;
+            animation: slideInFromRight 0.8s ease forwards;
+            animation-delay: 0.6s;
+        }
+        
+        .hero-description {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 0.8s;
+        }
+        
+        .hero-features {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 1s;
+        }
+        
+        .feature-card {
+            opacity: 0;
+            animation: cardSlideIn 0.6s ease forwards;
+            transform: translateY(30px);
+        }
+        
+        .feature-card:nth-child(1) { animation-delay: 1.2s; }
+        .feature-card:nth-child(2) { animation-delay: 1.4s; }
+        .feature-card:nth-child(3) { animation-delay: 1.6s; }
+        
+        .cta-section {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards;
+            animation-delay: 1.8s;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes logoFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8) rotate(-10deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+        
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Prevent layout shift */
+        .hero-content > * {
+            contain: layout;
+        }
+    </style>
 </head>
 <body>
     <div class="main-container">
@@ -215,5 +337,108 @@ $songs = $stmt->fetchAll();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="assets/js/main.js"></script>
+    <script>
+        // Enhanced landing page loading and navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize page state
+            document.body.classList.add('loaded');
+            
+            // Preload critical resources
+            const heroContent = document.querySelector('.hero-content');
+            if (heroContent) {
+                heroContent.style.visibility = 'visible';
+            }
+            
+            // Load banner ad
+            loadBannerAd();
+            
+            // Smooth scroll behavior
+            document.documentElement.style.scrollBehavior = 'smooth';
+        });
+        
+        // Navigation functions
+        function goToMusic() {
+            window.location.href = 'songs.php';
+        }
+        
+        // Banner ad loading
+        async function loadBannerAd() {
+            try {
+                const response = await fetch('/api/get_banner.php');
+                const data = await response.json();
+                
+                if (data.success && data.banner_code) {
+                    const bannerContainer = document.getElementById('adsterra-banner');
+                    if (bannerContainer) {
+                        bannerContainer.innerHTML = data.banner_code;
+                    }
+                }
+            } catch (error) {
+                console.log('Banner loading skipped');
+            }
+        }
+        
+        // Performance optimizations
+        window.addEventListener('load', function() {
+            // Trigger any delayed animations
+            const featureCards = document.querySelectorAll('.feature-card');
+            featureCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.transform = 'translateY(0)';
+                    card.style.opacity = '1';
+                }, index * 100);
+            });
+            
+            // Ensure all elements are visible
+            document.body.style.visibility = 'visible';
+        });
+        
+        // Error handling for missing elements
+        window.addEventListener('error', function(e) {
+            console.log('Resource loading handled gracefully');
+        });
+    </script>
+    <style>
+        /* Additional landing page stability */
+        body {
+            visibility: hidden;
+        }
+        
+        body.loaded {
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        /* CTA Button styles */
+        .btn-cta {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 50px;
+            padding: 15px 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(107, 70, 193, 0.3);
+        }
+        
+        .btn-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(107, 70, 193, 0.4);
+        }
+        
+        .cta-note {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Prevent flash of unstyled content */
+        .landing-hero * {
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
 </body>
 </html>
