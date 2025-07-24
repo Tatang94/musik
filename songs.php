@@ -197,7 +197,16 @@ $songs = $stmt->fetchAll();
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="withdrawForm">
+                    <!-- Withdrawal Status Section -->
+                    <div id="withdrawalStatusSection" style="display: none;">
+                        <h6 class="mb-3">Status Penarikan Anda</h6>
+                        <div id="withdrawalStatusList"></div>
+                        <hr>
+                    </div>
+                    
+                    <!-- Withdrawal Form -->
+                    <div id="withdrawalFormSection">
+                        <form id="withdrawForm">
                         <div class="mb-3">
                             <label class="form-label">Saldo Tersedia</label>
                             <div class="form-control-plaintext fw-bold">Rp <?= number_format($user['balance'], 0, ',', '.') ?></div>
@@ -208,13 +217,15 @@ $songs = $stmt->fetchAll();
                         </div>
                         <div class="mb-3">
                             <label for="withdrawAmount" class="form-label">Jumlah Penarikan</label>
-                            <input type="number" class="form-control" id="withdrawAmount" required min="10000" max="<?= $user['balance'] ?>" placeholder="Minimal Rp 10.000">
+                            <input type="number" class="form-control" id="withdrawAmount" required min="50000" max="<?= $user['balance'] ?>" placeholder="Minimal Rp 50.000">
+                            <div class="form-text">Minimum penarikan Rp 50,000</div>
                         </div>
                     </form>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" onclick="submitWithdraw()">Tarik Saldo</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary" id="submitWithdrawBtn" onclick="submitWithdraw()">Ajukan Penarikan</button>
                 </div>
             </div>
         </div>
@@ -226,6 +237,108 @@ $songs = $stmt->fetchAll();
     <script>
         function goToHome() {
             window.location.href = '/';
+        }
+        
+        // Withdrawal functions
+        async function showWithdrawModal() {
+            // Load withdrawal status first
+            await loadWithdrawalStatus();
+            
+            const modal = new bootstrap.Modal(document.getElementById('withdrawModal'));
+            modal.show();
+        }
+        
+        async function loadWithdrawalStatus() {
+            try {
+                const response = await fetch('api/get_withdrawals.php');
+                const result = await response.json();
+                
+                if (result.success && result.withdrawals.length > 0) {
+                    const statusSection = document.getElementById('withdrawalStatusSection');
+                    const statusList = document.getElementById('withdrawalStatusList');
+                    
+                    let statusHTML = '';
+                    result.withdrawals.forEach(withdrawal => {
+                        statusHTML += `
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small class="text-muted">#${withdrawal.id} - ${withdrawal.created_at_formatted}</small><br>
+                                            <strong>${withdrawal.amount_formatted}</strong>
+                                        </div>
+                                        <span class="badge bg-${withdrawal.status_class}">${withdrawal.status_label}</span>
+                                    </div>
+                                    ${withdrawal.admin_notes ? `<small class="text-info mt-1 d-block"><i class="fas fa-sticky-note"></i> ${withdrawal.admin_notes}</small>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    statusList.innerHTML = statusHTML;
+                    statusSection.style.display = 'block';
+                } else {
+                    document.getElementById('withdrawalStatusSection').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading withdrawal status:', error);
+            }
+        }
+        
+        async function submitWithdraw() {
+            const amount = document.getElementById('withdrawAmount').value;
+            const phone = document.getElementById('danaPhone').value;
+            
+            if (!amount || !phone) {
+                alert('Harap isi semua field');
+                return;
+            }
+            
+            if (parseFloat(amount) < 50000) {
+                alert('Minimum penarikan adalah Rp 50,000');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitWithdrawBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            
+            try {
+                const response = await fetch('api/withdraw_request.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        phone_number: phone
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Permintaan penarikan berhasil diajukan! Tunggu persetujuan admin.');
+                    document.getElementById('withdrawForm').reset();
+                    
+                    // Refresh withdrawal status
+                    await loadWithdrawalStatus();
+                    
+                    // Refresh user balance
+                    if (window.musicReward) {
+                        window.musicReward.loadUserBalance();
+                    }
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat mengajukan penarikan');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         }
         
         // Ensure proper loading and layout
