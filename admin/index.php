@@ -28,7 +28,182 @@ $totalMinutes = $stmt->fetch()['total_minutes'] ?: 0;
     <title>Admin Dashboard - MusikReward</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="../assets/css/style.css" rel="stylesheet">
+    <link href="../assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
+    <style>
+        /* Enhanced admin dashboard styles */
+        body {
+            background: var(--wave-gradient);
+            background-size: 400% 400%;
+            animation: waveAnimation 20s ease-in-out infinite;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        body.loaded {
+            opacity: 1;
+        }
+        
+        @keyframes waveAnimation {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .admin-header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .admin-header h1 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(107, 70, 193, 0.2);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: cardSlideIn 0.6s ease forwards;
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        .stat-card:nth-child(5) { animation-delay: 0.5s; }
+        
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .admin-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(107, 70, 193, 0.2);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(107, 70, 193, 0.3);
+        }
+        
+        .admin-card h5 {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .table {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        
+        .table td {
+            border-color: rgba(107, 70, 193, 0.1);
+            vertical-align: middle;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+            
+            .admin-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .admin-card {
+                padding: 20px;
+            }
+        }
+        
+        /* Loading states */
+        .fade-in {
+            opacity: 0;
+            animation: fadeIn 0.8s ease forwards;
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="admin-header">
@@ -167,5 +342,101 @@ $totalMinutes = $stmt->fetch()['total_minutes'] ?: 0;
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Enhanced admin dashboard functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize page state
+            document.body.classList.add('loaded');
+            document.body.style.opacity = '1';
+            
+            // Add fade-in effect to cards
+            const adminCards = document.querySelectorAll('.admin-card');
+            adminCards.forEach((card, index) => {
+                card.style.animationDelay = `${0.6 + (index * 0.1)}s`;
+                card.classList.add('fade-in');
+            });
+            
+            // Table fade-in
+            const table = document.querySelector('.table');
+            if (table) {
+                table.style.animationDelay = '1.2s';
+                table.classList.add('fade-in');
+            }
+            
+            // Real-time stats updates (optional enhancement)
+            function updateStats() {
+                // This could be enhanced to fetch real-time stats via AJAX
+                console.log('Stats updated');
+            }
+            
+            // Update stats every 30 seconds
+            setInterval(updateStats, 30000);
+            
+            // Add hover effects to stat cards
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+            
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Add loading state for navigation links
+            const navLinks = document.querySelectorAll('.admin-card a.btn');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+                    this.style.pointerEvents = 'none';
+                    
+                    // Restore after 2 seconds if page doesn't navigate
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.style.pointerEvents = 'auto';
+                    }, 2000);
+                });
+            });
+            
+            // Auto-refresh for logout link
+            const logoutLink = document.querySelector('a[href*="logout"]');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
+                    if (confirm('Are you sure you want to logout?')) {
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Logging out...';
+                    } else {
+                        e.preventDefault();
+                    }
+                });
+            }
+        });
+        
+        // Error handling
+        window.addEventListener('error', function(e) {
+            console.log('Resource loading handled gracefully');
+        });
+        
+        // Performance optimization
+        window.addEventListener('load', function() {
+            // Trigger any final animations
+            document.body.style.visibility = 'visible';
+        });
+    </script>
 </body>
 </html>
