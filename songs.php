@@ -18,7 +18,33 @@ $songs = $stmt->fetchAll();
     <title>Daftar Musik - MusikReward</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/style.css?v=<?= time() ?>" rel="stylesheet">
+    <style>
+        /* Prevent layout shift during loading */
+        .songs-container {
+            min-height: 400px;
+        }
+        .song-card {
+            opacity: 0;
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        .song-card:nth-child(1) { animation-delay: 0.1s; }
+        .song-card:nth-child(2) { animation-delay: 0.2s; }
+        .song-card:nth-child(3) { animation-delay: 0.3s; }
+        .song-card:nth-child(4) { animation-delay: 0.4s; }
+        .song-card:nth-child(n+5) { animation-delay: 0.5s; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="main-container">
@@ -178,6 +204,38 @@ $songs = $stmt->fetchAll();
         function goToHome() {
             window.location.href = '/';
         }
+        
+        // Ensure proper loading and layout
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force layout calculation to prevent layout shifts
+            const container = document.querySelector('.songs-container');
+            if (container) {
+                container.style.visibility = 'visible';
+            }
+            
+            // Add loading state management
+            document.body.classList.add('loaded');
+        });
+        
+        // Additional fallback for layout issues
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                const songCards = document.querySelectorAll('.song-card');
+                songCards.forEach(card => {
+                    card.style.visibility = 'visible';
+                });
+            }, 100);
+        });
     </script>
+    <style>
+        /* Additional stability styles */
+        body:not(.loaded) .songs-container {
+            opacity: 0.7;
+        }
+        body.loaded .songs-container {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+    </style>
 </body>
 </html>
