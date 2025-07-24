@@ -166,7 +166,7 @@ $songs = $stmt->fetchAll();
                 <div class="text-center">
                     <small class="text-muted">Waktu Mendengar</small>
                     <div class="fw-bold" id="listening-time">0 menit</div>
-                    <small class="text-success" id="reward-earned">+Rp 0</small>
+                    <small class="text-success" id="reward-earned">+Rp 0.0</small>
                 </div>
             </div>
         </div>

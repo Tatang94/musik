@@ -80,6 +80,9 @@ class MusicReward {
                 this.minutesListened = 0;
                 this.rewardEarned = 0;
                 
+                // Initialize reward display
+                document.getElementById('reward-earned').textContent = '+Rp 0.0';
+                
                 // Update player UI
                 this.updatePlayerUI(result.song);
                 this.showPlayer();
@@ -273,7 +276,7 @@ class MusicReward {
                 this.rewardEarned = this.minutesListened * 0.5;
                 
                 // Update reward display
-                document.getElementById('reward-earned').textContent = '+Rp ' + this.rewardEarned.toFixed(0);
+                document.getElementById('reward-earned').textContent = '+Rp ' + this.rewardEarned.toFixed(1);
                 
                 // Update balance in database
                 this.updateBalance();
