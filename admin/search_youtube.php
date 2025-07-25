@@ -1,8 +1,17 @@
 <?php
+// Start output buffering to prevent any accidental output
+ob_start();
+
+// Suppress any PHP warnings/notices
+error_reporting(0);
+ini_set('display_errors', 0);
+
 session_start();
 
-// Set content type first to prevent any HTML output
+// Clean output buffer and set headers
+ob_clean();
 header('Content-Type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
 
 try {
     require_once 'auth.php';
@@ -31,12 +40,15 @@ try {
     }
     
     if (!isset($searchResults['items']) || empty($searchResults['items'])) {
+        // Clean any remaining buffer content
+        ob_clean();
         echo json_encode([
             'success' => true,
             'videos' => [],
             'total' => 0,
             'message' => 'No videos found for this search'
         ]);
+        ob_end_flush();
         exit;
     }
     
@@ -53,6 +65,8 @@ try {
         }
     }
     
+    // Clean any remaining buffer content
+    ob_clean();
     echo json_encode([
         'success' => true,
         'videos' => $videos,
@@ -60,10 +74,15 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Clean any remaining buffer content
+    ob_clean();
     echo json_encode([
         'success' => false, 
         'message' => $e->getMessage(),
         'videos' => []
     ]);
 }
+
+// End output buffering and flush
+ob_end_flush();
 ?>
