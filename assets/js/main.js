@@ -69,7 +69,18 @@ class MusicReward {
                 })
             });
             
-            const result = await response.json();
+            // Get response text first to debug potential JSON issues
+            const responseText = await response.text();
+            
+            // Try to parse JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('JSON Parse Error in playSong:', jsonError);
+                console.error('Response text:', responseText);
+                throw new Error('Invalid JSON response from play_song API');
+            }
             
             if (result.success) {
                 this.currentSongId = songId;
@@ -300,7 +311,18 @@ class MusicReward {
                 })
             });
             
-            const result = await response.json();
+            // Get response text first to debug potential JSON issues
+            const responseText = await response.text();
+            
+            // Try to parse JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('JSON Parse Error in updateBalance:', jsonError);
+                console.error('Response text:', responseText);
+                throw new Error('Invalid JSON response from update_balance API');
+            }
             
             if (result.success) {
                 this.userBalance = result.new_balance;
@@ -420,11 +442,31 @@ class MusicReward {
     async loadUserBalance() {
         try {
             const response = await fetch('api/get_balance.php');
-            const result = await response.json();
+            
+            // Check if response is ok
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Get response text first to debug potential JSON issues
+            const responseText = await response.text();
+            
+            // Try to parse JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('JSON Parse Error:', jsonError);
+                console.error('Response text:', responseText);
+                throw new Error('Invalid JSON response from balance API');
+            }
             
             if (result.success) {
                 this.userBalance = result.balance;
-                document.getElementById('user-balance').textContent = 'Rp ' + this.formatNumber(result.balance);
+                const balanceElement = document.getElementById('user-balance');
+                if (balanceElement) {
+                    balanceElement.textContent = 'Rp ' + this.formatNumber(result.balance);
+                }
             }
         } catch (error) {
             console.error('Error loading balance:', error);
@@ -444,7 +486,24 @@ class MusicReward {
     async loadBannerAd() {
         try {
             const response = await fetch('api/get_banner.php');
-            const result = await response.json();
+            
+            // Check if response is ok
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Get response text first to debug potential JSON issues
+            const responseText = await response.text();
+            
+            // Try to parse JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('JSON Parse Error:', jsonError);
+                console.error('Response text:', responseText);
+                throw new Error('Invalid JSON response from banner API');
+            }
             
             if (result.success && result.script_code) {
                 const bannerContainer = document.getElementById('adsterra-banner');

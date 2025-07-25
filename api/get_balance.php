@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json');
+error_reporting(0); // Suppress PHP warnings
 require_once '../config/database.php';
 
 $userIp = $_SERVER['REMOTE_ADDR'];

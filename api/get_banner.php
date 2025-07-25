@@ -1,4 +1,5 @@
 <?php
+error_reporting(0); // Suppress PHP warnings
 require_once '../config/database.php';
 
 header('Content-Type: application/json');
