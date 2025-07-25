@@ -1,4 +1,7 @@
 <?php
+// License Protection - CRITICAL: DO NOT REMOVE OR MODIFY
+require_once '../license_check.php';
+
 require_once 'auth.php';
 checkAdminAuth();
 require_once '../config/database.php';
