@@ -455,7 +455,23 @@ $songs = $stmt->fetchAll();
                     body: JSON.stringify({ query: query })
                 });
 
-                const result = await response.json();
+                // Check if response is ok
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Get response text first to debug potential JSON issues
+                const responseText = await response.text();
+                
+                // Try to parse JSON
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (jsonError) {
+                    console.error('JSON Parse Error in searchYouTube:', jsonError);
+                    console.error('Response text:', responseText);
+                    throw new Error('Invalid JSON response from search API');
+                }
 
                 if (result.success && result.videos.length > 0) {
                     let html = '';

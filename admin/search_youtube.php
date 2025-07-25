@@ -55,32 +55,68 @@ try {
     $videos = [];
     foreach ($searchResults['items'] as $item) {
         if (isset($item['id']['videoId'])) {
+            // Clean and sanitize all text data to prevent JSON issues
+            $title = isset($item['snippet']['title']) ? trim($item['snippet']['title']) : 'Untitled';
+            $channelTitle = isset($item['snippet']['channelTitle']) ? trim($item['snippet']['channelTitle']) : 'Unknown Channel';
+            $description = isset($item['snippet']['description']) ? trim($item['snippet']['description']) : '';
+            
+            // Remove any control characters that might break JSON
+            $title = preg_replace('/[\x00-\x1F\x7F]/', '', $title);
+            $channelTitle = preg_replace('/[\x00-\x1F\x7F]/', '', $channelTitle);
+            $description = preg_replace('/[\x00-\x1F\x7F]/', '', $description);
+            
             $videos[] = [
                 'videoId' => $item['id']['videoId'],
-                'title' => htmlspecialchars($item['snippet']['title']),
-                'channelTitle' => htmlspecialchars($item['snippet']['channelTitle']),
-                'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] ?? $item['snippet']['thumbnails']['default']['url'],
-                'description' => htmlspecialchars(substr($item['snippet']['description'], 0, 150) . '...')
+                'title' => htmlspecialchars($title, ENT_QUOTES, 'UTF-8'),
+                'channelTitle' => htmlspecialchars($channelTitle, ENT_QUOTES, 'UTF-8'),
+                'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] ?? $item['snippet']['thumbnails']['default']['url'] ?? '',
+                'description' => htmlspecialchars(substr($description, 0, 150) . '...', ENT_QUOTES, 'UTF-8')
             ];
         }
     }
     
-    // Clean any remaining buffer content
+    // Clean any remaining buffer content and ensure proper JSON output
     ob_clean();
-    echo json_encode([
+    
+    // Final data cleaning before JSON encode
+    $responseData = [
         'success' => true,
         'videos' => $videos,
         'total' => count($videos)
-    ]);
+    ];
+    
+    // Ensure UTF-8 encoding
+    $jsonResponse = json_encode($responseData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        ob_clean();
+        echo json_encode([
+            'success' => false,
+            'message' => 'JSON encoding error: ' . json_last_error_msg(),
+            'videos' => []
+        ]);
+    } else {
+        echo $jsonResponse;
+    }
     
 } catch (Exception $e) {
     // Clean any remaining buffer content
     ob_clean();
-    echo json_encode([
+    
+    $errorResponse = [
         'success' => false, 
         'message' => $e->getMessage(),
         'videos' => []
-    ]);
+    ];
+    
+    // Ensure clean JSON output for errors too
+    $jsonResponse = json_encode($errorResponse, JSON_UNESCAPED_UNICODE);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        // Fallback error response if even error JSON fails
+        echo '{"success":false,"message":"Critical JSON error","videos":[]}';
+    } else {
+        echo $jsonResponse;
+    }
 }
 
 // End output buffering and flush
