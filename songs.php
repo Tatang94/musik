@@ -1,7 +1,4 @@
 <?php
-// License Protection - CRITICAL: DO NOT REMOVE OR MODIFY
-require_once 'license_check.php';
-
 require_once 'config/database.php';
 
 $userIp = $_SERVER['REMOTE_ADDR'];

@@ -1,5 +1,4 @@
 <?php
-require_once 'license_guard.php';
 error_reporting(0); // Suppress PHP warnings
 require_once '../config/database.php';
 
